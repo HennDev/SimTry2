@@ -8,7 +8,7 @@ var connection = mysql.createConnection({
             });
 
 const getUsers = (request, response) => {
-  pool.query('SELECT * FROM users ORDER BY id ASC', (error, results) => {
+  pool.query('SELECT * FROM Users ORDER BY id ASC', (error, results) => {
     if (error) {
       throw error
     }

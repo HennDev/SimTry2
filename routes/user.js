@@ -13,25 +13,27 @@ exports.login = function(req, res, next) {
 };
 
 exports.profileView = function(req, res) {
-		res.render('pages/profile', {userID:req.user.userID, username: req.user.username });
+		res.render('pages/profile', {userID:req.user.userID, username: req.user.username, roleID: req.user.roleID });
 };
 
 exports.signup = function(req, res) {
 	message = '';
+	var username1 = '';
 	if(req.method == "POST"){
 		var post  = req.body;
-		var name= post.username;
-		var pass= post.password;
-		var fname= post.first_name;
-		var lname= post.last_name;
+		var username = post.username;
+		var password = post.password;
+		var fname = post.First_Name;
+		var lname = post.Last_Name;
+		
 		
 		//check if username already exists
-		db.query("SELECT * FROM users where username = '"+name+"'", function (err, results, fields) {
+		db.query("SELECT * FROM users where Username = '"+username+"'", function (err, results, fields) {
 			if (err) throw err;
 			if(results.length>0) {
 				res.render('pages/signup', { data: req.body, message: "Username already exists" });
 			} else {
-				var sql = "INSERT INTO `users`(`first_name`,`last_name`,`username`, `password`) VALUES ('" + fname + "','" + lname + "','" + name + "','" + pass + "')";
+				var sql = "INSERT INTO `users`(`First_Name`,`Last_Name`,`Username`, `Password`) VALUES ('" + fname + "','" + lname + "','" + username + "','" + password + "')";
 				var query = db.query(sql, function(err, result) {
 					message = "Succesfully! Your account has been created.";
 					res.render('pages/signupSuccess', { message: message });

@@ -1,7 +1,7 @@
 const cool = require('cool-ascii-faces')
 var express = require('express')
 const path = require('path')
-const PORT = process.env.PORT || 6000
+const PORT = process.env.PORT || 5000
 const loggedIn = false;
 var auth = require('./auth');
 var admin = require('./routes/admin');
@@ -20,10 +20,10 @@ var connection = mysql.createConnection({
 	database : process.env.DBNAME
 });
 
-connection.connect(function(err) {
-	if (err) throw err;
-	console.log("Connected!");
-});
+//connection.connect(function(err) {
+//	if (err) throw err;
+//	console.log("Connected!");
+//});
 
 global.db = connection;
 
@@ -39,7 +39,6 @@ app
 	.use(bodyParser.json({ type: 'application/*+json' }))
 	.use(bodyParser.text({ type: 'text/html' }))
 	.use(bodyParser.urlencoded({ extended: true }))
-	.use('/admin', admin)
 	.set('views', path.join(__dirname, 'views'))
 	.set('view engine', 'ejs')
 	.listen(PORT, () => console.log(`Listening on ${ PORT }`));
@@ -70,10 +69,17 @@ const LocalStrategy = require('passport-local').Strategy;
 passport.use(new LocalStrategy(
 	function(username, password, done) {
 		//Check if username and password exist
-		db.query("SELECT * FROM users where username = '"+username+"' and password = '"+password+"'", function (err, results, fields) {
+		
+		console.log("username " + username + " password "+ password);
+
+		db.query("SELECT * FROM Users  left join Roles on Roles.Role_ID = Users.User_ID where Username = '"+username+"' and Password = '"+password+"'", function (err, results, fields) {
 			if (err) throw err;
 			if(results.length>0) {
-				return done(null, {username: username, userID: results[0].id});
+				
+					console.log(results[0]);
+
+
+				return done(null, {username: username, userID: results[0].id, roleID: results[0].Role_ID});
 			} else {
 				return done(null, false, { message: 'Password failed, try again.' })
 			}
@@ -82,11 +88,11 @@ passport.use(new LocalStrategy(
 ));
 
 app.get('/', function(req, res) {
-	console.log("app.get / "+req.session.username);
+	console.log("app.get / "+req.session);
 	
 	if(req.user)
 	{
-		res.render('pages/index', { title: 'Home', myVar : 'help', username: req.user.username });
+		res.render('pages/index', { title: 'Home', myVar : 'help', username: req.user.username, roleID: req.user.roleID });
 	}
 	else{
 		res.render('pages/index', { title: 'Home', myVar : 'help' });
@@ -110,3 +116,5 @@ app.get('/logout', function (req, res){
 		res.redirect('/'); //Inside a callback… bulletproof!
 	});
 });
+
+app.get('/admin/teams/all', isAuthenticated, admin.teamsAll);
