@@ -1,6 +1,7 @@
 const cool = require('cool-ascii-faces')
 var express = require('express')
 const path = require('path')
+require('dotenv').config()
 const PORT = process.env.PORT || 5000
 const loggedIn = false;
 var auth = require('./auth');
