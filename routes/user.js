@@ -26,13 +26,17 @@ exports.signup = function(req, res) {
 		var fname = post.First_Name;
 		var lname = post.Last_Name;
 		
+		res.render('pages/signup', { data: {}, message: "" });
+		
 		//check if username already exists
-		db.query("SELECT * FROM users where Username = '"+username+"'", function (err, results, fields) {
-			if (err) throw err;
+		db.query("SELECT * FROM Users where Username = '"+username+"'", function (err, results, fields) {
+			if (err){
+				res.render('pages/signup', { data: req.body, message: err });
+			}
 			if(results.length>0) {
 				res.render('pages/signup', { data: req.body, message: "Username already exists" });
 			} else {
-				var sql = "INSERT INTO `users`(`First_Name`,`Last_Name`,`Username`, `Password`) VALUES ('" + fname + "','" + lname + "','" + username + "','" + password + "')";
+				var sql = "INSERT INTO `Users`(`First_Name`,`Last_Name`,`Username`, `Password`) VALUES ('" + fname + "','" + lname + "','" + username + "','" + password + "')";
 				var query = db.query(sql, function(err, result) {
 					message = "Succesfully! Your account has been created.";
 					res.render('pages/signupSuccess', { message: message });
@@ -84,7 +88,7 @@ exports.teamsRequest = function(req, res) {
 	var queryText  = "INSERT INTO `Team_Users_Requests` (`Team_Id`, `User_Id`) ";
 			queryText += "VALUES ('"+teamID+"', '"+userID+"')";
 		
-		//INSERT INTO `users`(`First_Name`,`Last_Name`,`Username`, `Password`) VALUES ('" + fname + "','" + lname + "','" + username + "','" + password + "')";
+		//INSERT INTO `Users`(`First_Name`,`Last_Name`,`Username`, `Password`) VALUES ('" + fname + "','" + lname + "','" + username + "','" + password + "')";
 		
 		console.log("id " + 	req.params.id + " user id "+req.session.User_ID);
 		console.log("req.session.passport.user.userID " + 	req.session.passport.user.userID);
