@@ -5,6 +5,16 @@
 				<a href="/"><span class="glyphicon glyphicon-home"></span> Home</a>
 			</li>
 			
+			<% if (typeof user != 'undefined' && typeof user.username != 'undefined') { %>
+				<li class="">
+				<% if (user.teamAbbr != null) { %>
+					<a href="/"><span class=""></span> <%= user.teamAbbr %></a>
+				<% } else { %>
+					<a href="/user/teams/available"><span class="glyphicon glyphicon-open"></span> Request Team</a>
+				<% } %>
+				</li>
+			<% }%>
+			
 			<!--<li class="dropdown">
 				<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="glyphicon glyphicon-info-sign"></span> Getting Started Guides <span class="caret"></span></a>
 					<ul class="dropdown-menu" role="menu">

@@ -1,7 +1,7 @@
 const passport = require('passport');
 
 exports.teamsAll = function(req, res) {
-	var message = "An error has occured.message";
+	var message = "An error has occurred message";
 	var queryText  = "SELECT tms.Team_ID, Abbreviation, Team_Name, c.Conference_Name, tul.User_ID, u.Username FROM Teams tms ";
 			queryText += "inner join Team_Conferences_Link tcl on tms.Team_ID = tcl.Team_ID ";
 			queryText += "inner join Conferences c on c.Conference_ID = tcl.Conference_ID ";

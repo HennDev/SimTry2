@@ -13,20 +13,9 @@ var session = require('express-session');
 const passport = require('passport');
 var mysql      = require('mysql');
 
-var connection = mysql.createConnection({
-	host     : process.env.DBHOST,
-	port     : process.env.DBPORT,
-	user     : process.env.DBUSER,
-	password : process.env.DBPWD,
-	database : process.env.DBNAME
-});
+var fs = require("fs");
+var logger = require('morgan');
 
-//connection.connect(function(err) {
-//	if (err) throw err;
-//	console.log("Connected!");
-//});
-
-global.db = connection;
 
 function isAuthenticated(req, res, next) {
 	if (req.user && req.isAuthenticated())
@@ -44,10 +33,56 @@ app
 	.set('view engine', 'ejs')
 	.listen(PORT, () => console.log(`Listening on ${ PORT }`));
 
-app.use(function(req, res, next){
-	res.locals.user = req.user;
-	next();
+
+app.use(logger('combined', {
+		exitOnError: false,
+		stream: fs.createWriteStream('./access.log', {flags: 'a'}),
+		level: 'debug',
+		"format": "default",
+}));
+
+app.use(logger('dev'));
+
+
+
+
+var connection = mysql.createConnection({
+	host     : process.env.DBHOST,
+	port     : process.env.DBPORT,
+	user     : process.env.DBUSER,
+	password : process.env.DBPWD,
+	database : process.env.DBNAME
 });
+
+connection.on('error', function(err) {
+  console.log(err.code); // 'ER_BAD_DB_ERROR'
+});
+
+connection.connect(function(err) {
+	if (err) throw err;
+	
+	console.log("Connected!");
+	console.log(process.env.DBHOST);
+	console.log(process.env.DBPORT);
+	console.log(process.env.DBUSER);
+	console.log(process.env.DBHOST);
+	console.log(process.env.DBPWD);
+	console.info("EEEEE");
+	console.info('listening on port: ' + PORT);
+	
+});
+
+
+
+global.db = connection;
+
+
+
+db.on('error', function(err) {
+  console.log(err.code); // 'ER_BAD_DB_ERROR'
+});
+
+
 
 /*  PASSPORT SETUP  */
 app.use(flash());
@@ -63,6 +98,12 @@ passport.deserializeUser(function(user, done) {
 	done(null, user);
 });
 
+app.use(function(req, res, next){
+	res.locals.user = req.user;
+	res.locals.myVar = 'sample value';
+	next();
+});
+
 /* PASSPORT LOCAL AUTHENTICATION */
 
 const LocalStrategy = require('passport-local').Strategy;
@@ -71,16 +112,22 @@ passport.use(new LocalStrategy(
 	function(username, password, done) {
 		//Check if username and password exist
 		
-		console.log("username " + username + " password "+ password);
-
-		db.query("SELECT * FROM Users  left join Roles on Roles.Role_ID = Users.User_ID where Username = '"+username+"' and Password = '"+password+"'", function (err, results, fields) {
-			if (err) throw err;
-			if(results.length>0) {
+		var queryText  = "SELECT * FROM Users ";
+				queryText += "left join Roles on Roles.Role_ID = Users.User_ID ";
+				queryText += "left join Team_Users_Link tul on tul.User_ID = Users.User_ID ";
+				queryText += "left join Teams tms on tms.Team_ID = tul.Team_ID ";
+				queryText += "where Username = '"+username+"' ";
+				queryText += "and Password = '"+password+"'";
 				
-					console.log(results[0]);
-
-
-				return done(null, {username: username, userID: results[0].id, roleID: results[0].Role_ID});
+		db.query(queryText, function (err, results, fields) {
+			if (err){
+				throw err;
+				//redirect to error page
+				//return;
+			}
+			if(results.length>0) {
+				console.log("login results " + JSON.stringify(results[0], null, 2));
+				return done(null, {username: username, userID: results[0].User_ID, roleID: results[0].Role_ID, teamID: results[0].Team_Id, teamAbbr: results[0].Abbreviation	});
 			} else {
 				return done(null, false, { message: 'Password failed, try again.' })
 			}
@@ -91,13 +138,36 @@ passport.use(new LocalStrategy(
 app.get('/', function(req, res) {
 	console.log("app.get / "+req.session);
 	
-	if(req.user)
-	{
-		res.render('pages/index', { title: 'Home', myVar : 'help', username: req.user.username, roleID: req.user.roleID });
-	}
-	else{
-		res.render('pages/index', { title: 'Home', myVar : 'help' });
-	}
+	
+	
+	db.query("SELECT * FROM Users", function (err, results, fields) {
+			if (err) throw err;
+			if(results.length>0) {
+				
+					console.log(results[0]);
+					
+					if(req.user)
+        	{
+        		res.render('pages/index', { title: 'Home', myVar : 'help', username: req.user.username, roleID: req.user.roleID });
+        	}
+        	else{
+        		res.render('pages/index', { title: 'Home', myVar : 'help', DBNAME: process.env.DBHOST, host     : process.env.DBHOST,
+        	port     : process.env.DBPORT,
+        	user     : process.env.DBUSER,
+        	password : process.env.DBPWD,
+        	database : process.env.DBNAME,
+            userHere : JSON.stringify(results[0], null, 2)
+        		});
+        	}
+			} else {
+				
+			}
+			
+			
+		});
+		
+		
+	
 });
 
 app.get('/login', function(req, res) {
@@ -105,6 +175,10 @@ app.get('/login', function(req, res) {
 });
 
 app.post('/login', user.login);
+
+
+app.get('/user/teams/available', isAuthenticated, user.teamsAvailable);
+app.get('/user/teams/request/:id', isAuthenticated, user.teamsRequest);
 
 app.get('/signup', user.signup);
 app.post('/signup', user.signup);
